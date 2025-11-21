@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Server Test Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .test {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+        .loading {
+            background-color: #fff3cd;
+            border-color: #ffeaa7;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Server Connection Test</h1>
+    <p>This page tests if the API server is accessible from your browser.</p>
+    
+    <div class="test loading" id="status">
+        <strong>Status:</strong> <span id="statusText">Testing...</span>
+    </div>
+    
+    <h2>Test Endpoints</h2>
+    
+    <div class="test" id="root">
+        <h3>Root Endpoint (/)</h3>
+        <button onclick="testRoot()">Test</button>
+        <pre id="rootResult">Click button to test</pre>
+    </div>
+    
+    <div class="test" id="health">
+        <h3>Health Check (/api/health)</h3>
+        <button onclick="testHealth()">Test</button>
+        <pre id="healthResult">Click button to test</pre>
+    </div>
+    
+    <div class="test" id="docs">
+        <h3>API Documentation (/docs)</h3>
+        <button onclick="window.open('http://localhost:8000/docs', '_blank')">Open Docs</button>
+        <p>Opens in new tab</p>
+    </div>
+    
+    <div class="test" id="analyze">
+        <h3>Start Analysis (/api/analyze)</h3>
+        <button onclick="testAnalyze()">Start Analysis</button>
+        <pre id="analyzeResult">Click button to start analysis</pre>
+    </div>
+    
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        
+        // Auto-test on load
+        window.onload = function() {
+            testHealth();
+        };
+        
+        async function testRoot() {
+            const resultEl = document.getElementById('rootResult');
+            resultEl.textContent = 'Testing...';
+            
+            try {
+                const response = await fetch(API_BASE + '/');
+                const data = await response.json();
+                resultEl.textContent = JSON.stringify(data, null, 2);
+                document.getElementById('root').className = 'test success';
+            } catch (error) {
+                resultEl.textContent = 'Error: ' + error.message;
+                document.getElementById('root').className = 'test error';
+            }
+        }
+        
+        async function testHealth() {
+            const resultEl = document.getElementById('healthResult');
+            const statusEl = document.getElementById('status');
+            const statusText = document.getElementById('statusText');
+            
+            resultEl.textContent = 'Testing...';
+            statusText.textContent = 'Testing connection...';
+            
+            try {
+                const response = await fetch(API_BASE + '/api/health');
+                const data = await response.json();
+                resultEl.textContent = JSON.stringify(data, null, 2);
+                document.getElementById('health').className = 'test success';
+                statusEl.className = 'test success';
+                statusText.textContent = '✅ Server is running and accessible!';
+            } catch (error) {
+                resultEl.textContent = 'Error: ' + error.message + '\n\nMake sure:\n1. Server is running: python main.py\n2. Port 8000 is not blocked\n3. Try http://127.0.0.1:8000/api/health';
+                document.getElementById('health').className = 'test error';
+                statusEl.className = 'test error';
+                statusText.textContent = '❌ Cannot connect to server: ' + error.message;
+            }
+        }
+        
+        async function testAnalyze() {
+            const resultEl = document.getElementById('analyzeResult');
+            resultEl.textContent = 'Starting analysis...';
+            
+            try {
+                const response = await fetch(API_BASE + '/api/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        sample_size: 1000
+                    })
+                });
+                const data = await response.json();
+                resultEl.textContent = JSON.stringify(data, null, 2);
+                document.getElementById('analyze').className = 'test success';
+                
+                if (data.analysis_id) {
+                    resultEl.textContent += '\n\nAnalysis ID: ' + data.analysis_id + '\nCheck status at: /api/status/' + data.analysis_id;
+                }
+            } catch (error) {
+                resultEl.textContent = 'Error: ' + error.message;
+                document.getElementById('analyze').className = 'test error';
+            }
+        }
+    </script>
+</body>
+</html>
+
